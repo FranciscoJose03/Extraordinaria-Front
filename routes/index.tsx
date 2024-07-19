@@ -1,25 +1,38 @@
-import { useSignal } from "@preact/signals";
-import Counter from "../islands/Counter.tsx";
+import Inicio from "../components/Inicio.tsx"
+import { FreshContext, Handlers, PageProps } from "$fresh/server.ts"
+import { setCookie } from "$std/http/cookie.ts"
+import ListaContactos from "../islands/ListaContactos.tsx"
+import { Contacto } from "../type.ts"
+import { getCookies } from "$std/http/cookie.ts"
+import Anadir from "../components/Anadir.tsx"
+type Data = {
+  message: string
+};
 
-export default function Home() {
-  const count = useSignal(3);
-  return (
-    <div class="px-4 py-8 mx-auto bg-[#86efac]">
-      <div class="max-w-screen-md mx-auto flex flex-col items-center justify-center">
-        <img
-          class="my-6"
-          src="/logo.svg"
-          width="128"
-          height="128"
-          alt="the Fresh logo: a sliced lemon dripping with juice"
-        />
-        <h1 class="text-4xl font-bold">Welcome to Fresh</h1>
-        <p class="my-4">
-          Try updating this message in the
-          <code class="mx-2">./routes/index.tsx</code> file, and refresh.
-        </p>
-        <Counter count={count} />
-      </div>
-    </div>
-  );
+export const handler: Handlers = {
+  POST: async(req: Request, ctx: FreshContext) => {
+    const form = await req.formData();
+    const dni = form.get("dni")?.toString() || " ";
+    if(dni.length !== 9) {
+      return ctx.render({message: "El DNI debe tener 9 caracteres"})
+    }else{
+      const headers = new Headers();
+      setCookie(headers, {
+        name: "dni",
+        value: dni,
+        path: "/"
+      })
+      headers.set("location","/contactos")
+      return new Response(null, {
+        status: 303, 
+        headers
+      })
+    }
+  }
 }
+
+
+const Page = (props: PageProps<Data>) => (
+  <Inicio message = {props.data?.message}/>
+)
+export default Page
